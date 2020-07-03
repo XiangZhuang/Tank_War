@@ -6,7 +6,9 @@ import org.itheima.game.business.*
 import org.itheima.game.enums.Direction
 import org.itheima.game.model.*
 import org.itheima.kotlin.game.core.Window
+import java.io.BufferedReader
 import java.io.File
+import java.io.InputStreamReader
 import java.util.concurrent.CopyOnWriteArrayList
 
 class GameWindow: Window(title="Tank War",
@@ -20,16 +22,18 @@ class GameWindow: Window(title="Tank War",
 
     private var gameOver = false
 
-    private var enemyTotalSize = 3
-    private var enemyActiveSize = 1
+    private var enemyTotalSize = 20
+    private var enemyActiveSize = 6
 
     private val enemyBornLocs: ArrayList<Pair<Int, Int>> = arrayListOf<Pair<Int, Int>>()
     private var indexBorn: Int = 0
 
     override fun onCreate() {
         // Create Map
-        val file = File(javaClass.getResource("/map/1.map").toURI())
-        val lines: List<String> = file.readLines()
+//        val file = File(javaClass.getResource("/map/1.map").toURI())
+        val resourceStream = javaClass.getResourceAsStream("/map/1.map")
+        val reader = BufferedReader(InputStreamReader(resourceStream, "utf-8"))
+        val lines: List<String> = reader.readLines()
         var lineNum = 0
         lines.forEach {
             line ->

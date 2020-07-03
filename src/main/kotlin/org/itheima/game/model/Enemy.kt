@@ -16,7 +16,7 @@ class Enemy(override var x: Int, override var y: Int) : Movable, AutoMovable, Bl
 
     private var badDirection: Direction? = null
     private var lastShotTime = 0L
-    private val shotFrequency = 100
+    private val shotFrequency = 4000
     private var lastMoveTime = 0L
     private val moveFrequency = 200
 
