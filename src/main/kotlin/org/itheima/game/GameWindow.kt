@@ -18,6 +18,14 @@ class GameWindow: Window(title="Tank War",
 
     private lateinit var tank: Tank
 
+    private var gameOver = false
+
+    private var enemyTotalSize = 3
+    private var enemyActiveSize = 1
+
+    private val enemyBornLocs: ArrayList<Pair<Int, Int>> = arrayListOf<Pair<Int, Int>>()
+    private var indexBorn: Int = 0
+
     override fun onCreate() {
         // Create Map
         val file = File(javaClass.getResource("/map/1.map").toURI())
@@ -33,7 +41,7 @@ class GameWindow: Window(title="Tank War",
                     '草' -> views.add(Grass(columnNum * Config.block, lineNum * Config.block))
                     '水' -> views.add(Water(columnNum * Config.block, lineNum * Config.block))
                     '铁' -> views.add(Steel(columnNum * Config.block, lineNum * Config.block))
-                    '敌' -> views.add(Enemy(columnNum * Config.block, lineNum * Config.block))
+                    '敌' -> enemyBornLocs.add(Pair(columnNum * Config.block, lineNum * Config.block))
                 }
                 columnNum++
             }
@@ -53,19 +61,38 @@ class GameWindow: Window(title="Tank War",
     }
 
     override fun onKeyPressed(event: KeyEvent) {
-        when (event.code) {
-            KeyCode.W -> tank.move(Direction.UP)
-            KeyCode.S -> tank.move(Direction.DOWN)
-            KeyCode.A -> tank.move(Direction.LEFT)
-            KeyCode.D -> tank.move(Direction.RIGHT)
-            KeyCode.ENTER -> {
-                val bullet = tank.shot()
-                views.add(bullet)
+        if (!gameOver) {
+            when (event.code) {
+                KeyCode.W -> tank.move(Direction.UP)
+                KeyCode.S -> tank.move(Direction.DOWN)
+                KeyCode.A -> tank.move(Direction.LEFT)
+                KeyCode.D -> tank.move(Direction.RIGHT)
+                KeyCode.ENTER -> {
+                    val bullet = tank.shot()
+                    views.add(bullet)
+                }
             }
         }
     }
 
     override fun onRefresh() {
+        // Destroy Unused Element
+        views.filter { it is Destroyable }.forEach {
+            if ((it as Destroyable).isDestroyed()) {
+                views.remove(it)
+
+                if (it is Enemy) {
+                    enemyTotalSize--
+                }
+
+                val destroy: Array<View>? = it.showDestroy()
+                destroy?.let {
+                    views.addAll(destroy)
+                }
+            }
+        }
+        // Game Over
+        if (gameOver) return
         // Business
         // Collision
         views.filter { it is Movable }.forEach {
@@ -91,19 +118,16 @@ class GameWindow: Window(title="Tank War",
             }
             moveObj.notifyCollision(badDirection, badBlock)
         }
+
        // Auto Move
         views.filter { it is AutoMovable }.forEach {
             (it as AutoMovable).autoMove()
-        }
-        // Destroy Unused Element
-        views.filter { it is Destroyable }.forEach {
-            if ((it as Destroyable).isDestroyed()) views.remove(it)
         }
 
         views.filter { it is Attackable }.forEach {
             attack ->
             attack as Attackable
-            views.filter { (it is Sufferable) and (attack.owner != it)}.forEach sufferTag@ {
+            views.filter { (it is Sufferable) and (attack.owner != it) and (attack != it)}.forEach sufferTag@ {
                 suffer ->
                 suffer as Sufferable
                 if (attack.isCollision(suffer)) {
@@ -116,12 +140,25 @@ class GameWindow: Window(title="Tank War",
                 }
             }
         }
+
         views.filter{ it is AutoShot }.forEach {
             it as AutoShot
             val shot: View? = it.autoShot()
             shot?.let {
                 views.add(shot)
             }
+        }
+
+        if ((views.filter{ it is Camp }.isEmpty()) or (enemyTotalSize <= 0)) {
+            gameOver = true
+        }
+
+        if (views.filter{ it is Enemy }.size < enemyActiveSize) {
+            println(indexBorn)
+            val pair = enemyBornLocs[indexBorn % enemyBornLocs.size]
+            println(pair)
+            views.add(Enemy(pair.first, pair.second))
+            indexBorn++
         }
     }
 
